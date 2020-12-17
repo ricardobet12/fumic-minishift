@@ -5,15 +5,11 @@
  */
 package com.laboratorio.backlaboratorio.services.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.laboratorio.backlaboratorio.dto.Persona;
 import com.laboratorio.backlaboratorio.dto.UsuariosDTO;
 import com.laboratorio.backlaboratorio.entity.Usuarios;
 import com.laboratorio.backlaboratorio.repository.UsuariosRepository;
 import com.laboratorio.backlaboratorio.services.UsuariosService;
-import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
@@ -23,16 +19,9 @@ import java.util.Optional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.security.MessageDigest;
-import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import org.apache.commons.codec.binary.Base64;
 import org.json.JSONObject;
-import static org.springframework.data.repository.init.ResourceReader.Type.JSON;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -54,7 +43,6 @@ public class DefaultUsuariosService implements UsuariosService {
 
     @Override
     public UsuariosDTO registrarUsuario(UsuariosDTO u) {
-        u.setClave(this.encriptar(u.getClave()));
         Usuarios usu = this.usuariosRepository.save(mapper.map(u, Usuarios.class));
         return mapper.map(usu, UsuariosDTO.class);
     }
@@ -65,11 +53,6 @@ public class DefaultUsuariosService implements UsuariosService {
         List<UsuariosDTO> result = new ArrayList<>();
         if (usuarios != null || !usuarios.isEmpty()) {
             for (Usuarios u : usuarios) {
-                try {
-                    u.setClave(this.desencriptar(u.getClave()));
-                } catch (Exception ex) {
-                    Logger.getLogger(DefaultUsuariosService.class.getName()).log(Level.SEVERE, null, ex);
-                }
                 result.add(mapper.map(u, UsuariosDTO.class));
             }
             return result;
@@ -77,54 +60,7 @@ public class DefaultUsuariosService implements UsuariosService {
         return null;
     }
 
-    public String encriptar(String texto) {
-
-        String secretKey = "qualityinfosolutions"; //llave para encriptar datos
-        String base64EncryptedString = "";
-
-        try {
-
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] digestOfPassword = md.digest(secretKey.getBytes("utf-8"));
-            byte[] keyBytes = Arrays.copyOf(digestOfPassword, 24);
-
-            SecretKey key = new SecretKeySpec(keyBytes, "DESede");
-            Cipher cipher = Cipher.getInstance("DESede");
-            cipher.init(Cipher.ENCRYPT_MODE, key);
-
-            byte[] plainTextBytes = texto.getBytes("utf-8");
-            byte[] buf = cipher.doFinal(plainTextBytes);
-            byte[] base64Bytes = Base64.encodeBase64(buf);
-            base64EncryptedString = new String(base64Bytes);
-
-        } catch (Exception ex) {
-        }
-        return base64EncryptedString;
-    }
-
-    public String desencriptar(String textoEncriptado) throws Exception {
-
-        String secretKey = "qualityinfosolutions"; //llave para desenciptar datos
-        String base64EncryptedString = "";
-
-        try {
-            byte[] message = Base64.decodeBase64(textoEncriptado.getBytes("utf-8"));
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] digestOfPassword = md.digest(secretKey.getBytes("utf-8"));
-            byte[] keyBytes = Arrays.copyOf(digestOfPassword, 24);
-            SecretKey key = new SecretKeySpec(keyBytes, "DESede");
-
-            Cipher decipher = Cipher.getInstance("DESede");
-            decipher.init(Cipher.DECRYPT_MODE, key);
-
-            byte[] plainText = decipher.doFinal(message);
-
-            base64EncryptedString = new String(plainText, "UTF-8");
-
-        } catch (Exception ex) {
-        }
-        return base64EncryptedString;
-    }
+    
 
     @Override
     public boolean eliminarUsuario(Integer id) {
@@ -140,7 +76,17 @@ public class DefaultUsuariosService implements UsuariosService {
 
     @Override
     public UsuariosDTO login(String usuario, String clave) {
-        Usuarios u = usuariosRepository.findByUsuarioAndClave(usuario, this.encriptar(clave));
+        List<Usuarios> usu = usuariosRepository.findAll();
+        if (!usu.isEmpty()) {
+            for (Usuarios usuarios : usu) {
+                System.out.println(usuarios.getUsuario()+usuarios.getClave());
+            }
+        }else {
+            System.out.println("la lista se encuetra vacia");
+        }
+        System.out.println(usuario+clave);
+        Usuarios u = usuariosRepository.findByUsuarioAndClave(usuario, clave);
+        System.out.println(u.getNombres());
         if (u != null) {
             return mapper.map(u, UsuariosDTO.class);
         }
@@ -153,11 +99,6 @@ public class DefaultUsuariosService implements UsuariosService {
         List<UsuariosDTO> result = new ArrayList<>();
         if (usuario != null || !usuario.isEmpty()) {
             for (Usuarios t : usuario) {
-                try {
-                    t.setClave(this.desencriptar(t.getClave()));
-                } catch (Exception ex) {
-                    Logger.getLogger(DefaultUsuariosService.class.getName()).log(Level.SEVERE, null, ex);
-                }
                 result.add(mapper.map(t, UsuariosDTO.class));
             }
             return result;
@@ -169,11 +110,6 @@ public class DefaultUsuariosService implements UsuariosService {
     public UsuariosDTO obtenerUsuarioPorid(Integer id) {
         Optional<Usuarios> usuario = this.usuariosRepository.findById(id);
         if (usuario.isPresent()) {
-            try {
-                usuario.get().setClave(this.desencriptar(usuario.get().getClave()));
-            } catch (Exception ex) {
-                Logger.getLogger(DefaultUsuariosService.class.getName()).log(Level.SEVERE, null, ex);
-            }
             return mapper.map(usuario.get(), UsuariosDTO.class);
         }
         return null;
