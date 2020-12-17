@@ -1,1 +1,1 @@
-# fumic-minishift
+# fumic
