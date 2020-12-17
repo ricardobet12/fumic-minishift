@@ -86,8 +86,9 @@ public class DefaultUsuariosService implements UsuariosService {
         }
         System.out.println(usuario+clave);
         Usuarios u = usuariosRepository.findByUsuarioAndClave(usuario, clave);
-        System.out.println(u.getNombres());
+        
         if (u != null) {
+            System.out.println(u.getNombres());
             return mapper.map(u, UsuariosDTO.class);
         }
         return null;
