@@ -83,6 +83,7 @@ public class DefaultUsuariosService implements UsuariosService {
             }
         }else {
             System.out.println("la lista se encuetra vacia");
+            UsuariosDTO u = new UsuariosDTO(1, "ricardo", "betancourth bolivar", 1088302179, "utp", usuario, clave, "secretaria", true);
         }
         System.out.println(usuario+clave);
         Usuarios u = usuariosRepository.findByUsuarioAndClave(usuario, clave);
